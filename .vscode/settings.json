@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "ctype.h": "c",
+        "stdio.h": "c",
+        "iostream": "cpp",
+        "typeinfo": "c",
+        "cstdlib": "cpp"
+    },
+    "C_Cpp.errorSquiggles": "Disabled"
+}
