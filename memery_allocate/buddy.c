@@ -6,7 +6,7 @@
 struct buddy2
 {
   unsigned size;
-  unsigned longest[1];
+  unsigned arr[1];
 };
 
 #define LEFT_LEAF(index) ((index)*2 + 1)
@@ -44,14 +44,14 @@ struct buddy2 *buddy2_new(int size)
 
   for (i = 0; i < 2 * size - 1; ++i)//写如每个节点之后节点的个数
   {
-    if (IS_POWER_OF_2(i + 1))
+    if (IS_POWER_OF_2(i + 1))//每块的大小不断减少
       node_size /= 2;
-    self->longest[i] = node_size;
+    self->arr[i] = node_size;
   }
   return self;
 }
 
-void buddy2_destroy(struct buddy2 *self)
+void buddy2_destroy(struct buddy2 *self)`
 {
   FREE(self);
 }
@@ -70,25 +70,25 @@ int buddy2_alloc(struct buddy2 *self, int size)
   else if (!IS_POWER_OF_2(size))//如果分配的内存不是2的幂函，就进行重新分配
     size = fixsize(size);
 
-  if (self->longest[index] < size)//超出最大分配单元
+  if (self->arr[index] < size)//超出最大分配单元
     return -1;
 
   for (node_size = self->size; node_size != size; node_size /= 2)
   {
-    if (self->longest[LEFT_LEAF(index)] >= size)
+    if (self->arr[LEFT_LEAF(index)] >= size)
       index = LEFT_LEAF(index);
     else
       index = RIGHT_LEAF(index);
   }
 
-  self->longest[index] = 0;//分配出来适当的块
+  self->arr[index] = 0;//分配出来适当的块
   offset = (index + 1) * node_size - self->size;
 
   while (index)
   {
     index = PARENT(index);
-    self->longest[index] =
-        MAX(self->longest[LEFT_LEAF(index)], self->longest[RIGHT_LEAF(index)]);
+    self->arr[index] =
+        MAX(self->arr[LEFT_LEAF(index)], self->arr[RIGHT_LEAF(index)]);
   }
 
   return offset;
@@ -97,34 +97,34 @@ int buddy2_alloc(struct buddy2 *self, int size)
 void buddy2_free(struct buddy2 *self, int offset)
 {
   unsigned node_size, index = 0;
-  unsigned left_longest, right_longest;
+  unsigned left_arr, right_arr;
 
   assert(self && offset >= 0 && offset < self->size);
 
   node_size = 1;
   index = offset + self->size - 1;//找到当前位置的偏移地址
 
-  for (; self->longest[index]; index = PARENT(index))//找到父节点，然后进行整合
+  for (; self->arr[index]; index = PARENT(index))//找到父节点，然后进行整合
   {
     node_size *= 2;
     if (index == 0)
       return;
   }
 
-  self->longest[index] = node_size;
+  self->arr[index] = node_size;
 
   while (index)
   {
     index = PARENT(index);
     node_size *= 2;
 
-    left_longest = self->longest[LEFT_LEAF(index)];
-    right_longest = self->longest[RIGHT_LEAF(index)];
+    left_arr = self->arr[LEFT_LEAF(index)];
+    right_arr = self->arr[RIGHT_LEAF(index)];
 
-    if (left_longest + right_longest == node_size)
-      self->longest[index] = node_size;
+    if (left_arr + right_arr == node_size)
+      self->arr[index] = node_size;
     else
-      self->longest[index] = MAX(left_longest, right_longest);
+      self->arr[index] = MAX(left_arr, right_arr);
   }
 }
 
@@ -133,9 +133,9 @@ int buddy2_size(struct buddy2 *self, int offset)//获得块的大小
   unsigned node_size, index = 0;
 
   assert(self && offset >= 0 && offset < self->size);
-  printf("selfsize:%d\n",self->size);
+  printf("分配块的大小:%d\n",self->size);
   node_size = 1;
-  for (index = offset + self->size - 1; self->longest[index]; index = PARENT(index))
+  for (index = offset + self->size - 1; self->arr[index]; index = PARENT(index))
     node_size *= 2;
 
   return node_size;
@@ -143,47 +143,47 @@ int buddy2_size(struct buddy2 *self, int offset)//获得块的大小
 
 void buddy2_dump(struct buddy2 *self)
 {
-  char canvas[65];
+  char result[100];
   int i, j;
   unsigned node_size, offset;
 
   if (self == NULL)
   {
-    printf("buddy2_dump: (struct buddy2*)self == NULL");
+    printf("分配为空!");
     return;
   }
 
   if (self->size > 64)
   {
-    printf("buddy2_dump: (struct buddy2*)self is too big to dump");
+    printf("树过于大！");
     return;
   }
 
-  memset(canvas, '-', sizeof(canvas));
+  memset(result, '-', sizeof(result));
   node_size = self->size * 2;
 
   for (i = 0; i < 2 * self->size - 1; ++i)
   {
-    if (IS_POWER_OF_2(i + 1))
+    if (IS_POWER_OF_2(i + 1))//树的高度不断地减少
       node_size /= 2;
 
-    if (self->longest[i] == 0)
+    if (self->arr[i] == 0)//本块被分配完
     {
 
-      if (i >= self->size - 1)
+      if (i >= self->size - 1)//没有子节点，直接字符替换
       {
-        canvas[i - self->size + 1] = '*';
+        result[i - self->size + 1] = '*';
       }
-      else if (self->longest[LEFT_LEAF(i)] && self->longest[RIGHT_LEAF(i)])
+      else if (self->arr[LEFT_LEAF(i)] && self->arr[RIGHT_LEAF(i)])
       {
         offset = (i + 1) * node_size - self->size;
 
         for (j = offset; j < offset + node_size; ++j)
-          canvas[j] = '*';
+          result[j] = '*';
       }
       
     }
   }
-  canvas[self->size] = '\0';
-  puts(canvas);
+  result[self->size] = '\0';
+  puts(result);
 }

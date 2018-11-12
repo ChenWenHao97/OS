@@ -13,7 +13,13 @@ int main()
     scanf("%d %d", &num, &arg);
     if (num == 1)
     {
-      printf("allocated:%d\n", buddy2_alloc(buddy, arg));
+      int index = 0;
+      if ((index = buddy2_alloc(buddy, arg)) != -1)
+        printf("分配的起始下标:%d\n", index);
+      else
+      {
+        printf("内存不足!\n");
+      }
       buddy2_dump(buddy);
     }
     else if (num == 2)
@@ -28,7 +34,10 @@ int main()
     }
     else
       buddy2_dump(buddy);
+    printf("\n\n");
+    display();
   }
+  
 }
 void display(void)
 {
